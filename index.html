@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matriz de Asientos</title>
+    <style>
+        .asiento {
+            width: 40px;
+            height: 40px;
+            margin: 2px;
+            display: inline-block;
+            text-align: center;
+            line-height: 40px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+        }
+        .libre { background-color: #00FF00; }
+        .ocupado { background-color: #FF0000; }
+        #guardar {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        #guardar:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Matriz de Asientos</h1>
+    <div id="teatro"></div>
+    <button id="guardar">Guardar</button>
+
+    <script>
+        let asientos = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('asientos.php')
+                .then(response => response.json())
+                .then(data => {
+                    asientos = data;
+                    const teatroDiv = document.getElementById('teatro');
+                    
+                    // Limpiar el contenedor antes de llenarlo
+                    teatroDiv.innerHTML = '';
+
+                    for (let i = 1; i <= 3; i++) {
+                        let filaDiv = document.createElement('div');
+                        for (let j = 1; j <= 12; j++) {
+                            let asiento = asientos.find(a => a.fila == i && a.columna == j);
+                            
+                            if (!asiento) {
+                                console.error(`Asiento no encontrado para fila ${i}, columna ${j}`);
+                                continue;
+                            }
+
+                            let asientoDiv = document.createElement('div');
+                            asientoDiv.className = `asiento ${asiento.estado}`;
+                            asientoDiv.dataset.id = asiento.id;
+                            asientoDiv.dataset.fila = asiento.fila;
+                            asientoDiv.dataset.columna = asiento.columna;
+                            asientoDiv.textContent = `${i}-${j}`;
+                            
+                            asientoDiv.addEventListener('click', function() {
+                                let nuevoEstado = asiento.estado === 'libre' ? 'ocupado' : 'libre';
+                                
+                                // Cambiar el estado visualmente
+                                asientoDiv.className = `asiento ${nuevoEstado}`;
+                                
+                                // Actualizar el estado local
+                                asiento.estado = nuevoEstado;
+                            });
+                            filaDiv.appendChild(asientoDiv);
+                        }
+                        teatroDiv.appendChild(filaDiv);
+                    }
+                })
+                .catch(error => console.error('Error al cargar los asientos:', error));
+        });
+
+        document.getElementById('guardar').addEventListener('click', function() {
+            let formData = new URLSearchParams();
+
+            asientos.forEach(asiento => {
+                formData.append(`id_${asiento.id}`, asiento.id);
+                formData.append(`estado_${asiento.id}`, asiento.estado);
+            });
+
+            fetch('asientos.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(message => {
+                console.log(message); // Para depurar
+                alert('Cambios guardados exitosamente.');
+            })
+            .catch(error => {
+                console.error('Error al guardar los asientos:', error);
+                alert('Error al guardar los cambios.');
+            });
+        });
+    </script>
+</body>
+</html>
